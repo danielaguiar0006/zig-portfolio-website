@@ -2,6 +2,7 @@ const std = @import("std");
 const zap = @import("zap");
 
 const StyleEndpoint = @import("StyleEndpoint.zig");
+const IconEndpoint = @import("IconEndpoint.zig");
 const HomeEndpoint = @import("HomeEndpoint.zig");
 
 const HOMEPAGE_URI = "/home";
@@ -28,11 +29,12 @@ fn on_request(r: zap.Request) void {
 }
 
 pub fn main() !void {
+    // INIT ALLOCATOR
     var gpa = std.heap.GeneralPurposeAllocator(.{
         .thread_safe = true,
         .safety = true,
     }){};
-    defer {
+    defer { // DEINIT ALLOCATOR
         const deinit_status = gpa.deinit();
         if (deinit_status == .leak) {
             std.debug.print("Memory leak detected!\n", .{});
@@ -51,13 +53,15 @@ pub fn main() !void {
     });
     defer endpoint_listener.deinit();
 
-    // INIT ENDPOINTS
+    // INIT ENDPOINTS - NOTE: Some might need to be deinited
     var style_endpoint = StyleEndpoint.init("/style.css");
+    var icon_endpoint = IconEndpoint.init("/icon.jpg");
     var home_endpoint = HomeEndpoint.init(allocator, HOMEPAGE_URI);
     defer home_endpoint.deinit();
 
     // REGISTER ENDPOINTS TO LISTENER
     try endpoint_listener.register(style_endpoint.getEndpoint());
+    try endpoint_listener.register(icon_endpoint.getEndpoint());
     try endpoint_listener.register(home_endpoint.getEndpoint());
 
     // LISTEN

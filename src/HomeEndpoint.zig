@@ -19,10 +19,13 @@ pub fn init(allocator: std.mem.Allocator, path: []const u8) Self {
 
     html_template_top_bun = html_template_reader.readUntilDelimiterAlloc(allocator, '~', std.math.maxInt(usize)) catch unreachable;
     html_template_bottom_bun = html_template_reader.readAllAlloc(allocator, std.math.maxInt(usize)) catch unreachable;
-    content =
-        \\<h1>Hello from Zig and ZAP!!!</h1>
-        \\  <p>This is a simple web server written in Zig.</p>
-    ;
+    content = "<h1>Hello from Zig and ZAP!!!</h1>" ++ "<p>This is a simple web server written in Zig.</p>";
+
+    // This causes whitespace between each line in the dom
+    // content =
+    //     \\<h1>Hello from Zig and ZAP!!!</h1>
+    //     \\<p>This is a simple web server written in Zig.</p>
+    // ;
 
     return .{
         .endpoint = zap.Endpoint.init(.{
@@ -46,12 +49,6 @@ fn get(e: *zap.Endpoint, r: zap.Request) void {
     _ = e;
 
     var buffer: [2048]u8 = undefined;
-    //var buffer_stream = std.io.fixedBufferStream(&buffer);
-    //const buffer_writer = buffer_stream.writer();
-
-    //const html = std.fmt.allocPrint(allocator, "{s}{s}{s}", .{ html_template_top_bun, content, html_template_bottom_bun }) catch unreachable;
-    //defer allocator.free(html);
-
     const html = std.fmt.bufPrint(&buffer, "{s}{s}{s}", .{ html_template_top_bun, content, html_template_bottom_bun }) catch unreachable;
 
     r.sendBody(html) catch return;

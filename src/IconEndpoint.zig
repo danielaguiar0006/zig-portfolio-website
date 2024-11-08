@@ -21,18 +21,8 @@ pub fn getEndpoint(self: *Self) *zap.Endpoint {
 fn get(e: *zap.Endpoint, r: zap.Request) void {
     _ = e;
 
-    const file_path: []const u8 = "src/style.css";
-    //r.sendFile(file_path) catch return;
-    r.sendBody( // TODO: This allows me to dynamically send custom css
-        \\#container {
-        \\    width: 100%;
-        \\    height: 100%;
-        \\    display: flex;
-        \\    justify-content: center;
-        \\    align-items: center;
-        \\    background-color: blue;
-        \\}
-    ) catch return;
+    const file_path: []const u8 = "imgs/me_256x256.jpg";
+    r.sendFile(file_path) catch return;
 
     std.debug.print("Sending file {s}\n", .{file_path});
 }
