@@ -16,10 +16,10 @@ var ascii_table: AsciiTable = undefined;
 
 pub fn init(allocator: std.mem.Allocator, path: []const u8) Self {
     // READ TEMPLATES
-    const homepage_banner_template = std.fs.cwd().readFileAlloc(allocator, "src/templates/homepage_banner.html.template", std.math.maxInt(usize)) catch unreachable;
+    const homepage_banner_template = std.fs.cwd().readFileAlloc(allocator, "src/templates/homepage_banner.html", std.math.maxInt(usize)) catch unreachable;
     defer allocator.free(homepage_banner_template);
 
-    const html_template = std.fs.cwd().readFileAlloc(allocator, "src/templates/index.html.template", std.math.maxInt(usize)) catch unreachable;
+    const html_template = std.fs.cwd().readFileAlloc(allocator, "src/templates/index.html", std.math.maxInt(usize)) catch unreachable;
     defer allocator.free(html_template);
     var html_template_stream = std.io.fixedBufferStream(html_template);
     const html_template_reader = html_template_stream.reader();
