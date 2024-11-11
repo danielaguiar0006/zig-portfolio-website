@@ -1,9 +1,9 @@
 const std = @import("std");
 const zap = @import("zap");
 
-const StyleEndpoint = @import("StyleEndpoint.zig");
-const IconEndpoint = @import("IconEndpoint.zig");
-const HomeEndpoint = @import("HomeEndpoint.zig");
+const StyleEndpoint = @import("endpoints/StyleEndpoint.zig");
+const IconEndpoint = @import("endpoints/IconEndpoint.zig");
+const HomeEndpoint = @import("endpoints/HomeEndpoint.zig");
 
 const HOMEPAGE_URI = "/home";
 
