@@ -21,7 +21,7 @@ pub fn getEndpoint(self: *Self) *zap.Endpoint {
 fn get(e: *zap.Endpoint, r: zap.Request) void {
     _ = e;
 
-    const file_path: []const u8 = "src/style.css";
+    const file_path: []const u8 = "assets/css/style.css";
     //r.sendFile(file_path) catch return;
     r.sendBody( // TODO: This allows me to dynamically send custom css
         \\#container {
