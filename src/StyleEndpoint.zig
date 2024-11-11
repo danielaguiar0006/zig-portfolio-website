@@ -22,17 +22,23 @@ fn get(e: *zap.Endpoint, r: zap.Request) void {
     _ = e;
 
     const file_path: []const u8 = "assets/css/style.css";
-    //r.sendFile(file_path) catch return;
-    r.sendBody( // TODO: This allows me to dynamically send custom css
-        \\#container {
-        \\    width: 100%;
-        \\    height: 100%;
-        \\    display: flex;
-        \\    justify-content: center;
-        \\    align-items: center;
-        \\    background-color: blue;
-        \\}
-    ) catch return;
+    r.sendFile(file_path) catch |err| {
+        std.debug.print("ERROR: {s}\n", .{@errorName(err)});
+
+        r.setStatus(.internal_server_error);
+        r.sendBody("Internal Server Error") catch return;
+    };
+
+    // r.sendBody( // TODO: This allows me to dynamically send custom css - maybe a dark/light mode?
+    //     \\#container {
+    //     \\    width: 100%;
+    //     \\    height: 100%;
+    //     \\    display: flex;
+    //     \\    justify-content: center;
+    //     \\    align-items: center;
+    //     \\    background-color: blue;
+    //     \\}
+    // ) catch return;
 
     std.debug.print("Sending file {s}\n", .{file_path});
 }

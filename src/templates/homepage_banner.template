@@ -1,6 +1,10 @@
-██████╗░███████╗██╗░██████╗░███╗░░██╗ Portfolio Website
-██╔══██╗██╔════╝██║██╔════╝░████╗░██║ Copyright (c) 2023 Daniel Aguiar
-██████╔╝█████╗░░██║██║░░██╗░██╔██╗██║ Licensed under the MIT License
-██╔══██╗██╔══╝░░██║██║░░╚██╗██║╚████║
-██║░░██║███████╗██║╚██████╔╝██║░╚███║ Source:
-╚═╝░░╚═╝╚══════╝╚═╝░╚═════╝░╚═╝░░╚══╝ https://github.com/yo-reign/zig-portfolio-website
+<div id="homepage-banner">
+  <pre>
+    ██████╗░███████╗██╗░██████╗░███╗░░██╗ <span>Portfolio Website</span>
+    ██╔══██╗██╔════╝██║██╔════╝░████╗░██║ <span>Copyright (c) 2023 Daniel Aguiar</span>
+    ██████╔╝█████╗░░██║██║░░██╗░██╔██╗██║ <span>Licensed under the MIT License</span>
+    ██╔══██╗██╔══╝░░██║██║░░╚██╗██║╚████║
+    ██║░░██║███████╗██║╚██████╔╝██║░╚███║ <span>Source:</span>
+    ╚═╝░░╚═╝╚══════╝╚═╝░╚═════╝░╚═╝░░╚══╝ <span>https://github.com/yo-reign/zig-portfolio-website</span>
+  </pre>
+</div>

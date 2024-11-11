@@ -35,7 +35,7 @@ fn on_request(r: zap.Request) void {
 }
 
 pub fn main() !void {
-    // INIT ALLOCATOR
+    // INIT ALLOCATOR - NOTE: using GPA to detect memory leaks
     var gpa = std.heap.GeneralPurposeAllocator(.{
         .thread_safe = true,
         .safety = true,
@@ -59,7 +59,7 @@ pub fn main() !void {
     });
     defer endpoint_listener.deinit();
 
-    // INIT ENDPOINTS - NOTE: Some might need to be deinited
+    // INIT ENDPOINTS - NOTE: Watch out! Some might need to be deinited
     var style_endpoint = StyleEndpoint.init("/style.css");
     var icon_endpoint = IconEndpoint.init("/icon.jpg");
     var home_endpoint = HomeEndpoint.init(allocator, HOMEPAGE_URI);

@@ -22,7 +22,12 @@ fn get(e: *zap.Endpoint, r: zap.Request) void {
     _ = e;
 
     const file_path: []const u8 = "imgs/me_256x256.jpg";
-    r.sendFile(file_path) catch return;
+    r.sendFile(file_path) catch |err| {
+        std.debug.print("ERROR: {s}\n", .{@errorName(err)});
+
+        r.setStatus(.internal_server_error);
+        r.sendBody("Internal Server Error") catch return;
+    };
 
     std.debug.print("Sending file {s}\n", .{file_path});
 }
