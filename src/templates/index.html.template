@@ -1,18 +1,19 @@
 <!doctype html>
 <html>
-	<head>
-		<title>Daniel's Mind</title>
-		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-		<link rel="stylesheet" href="/style.css">
-		<link rel="icon" href="/icon.jpg" type="image/jpeg">
-	</head>
-	<body>
-		<div id="container">
-			<pre><code>
+<head>
+	<title>Daniel's Mind</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+	<link rel="stylesheet" href="/style.css">
+	<link rel="icon" href="/icon.jpg" type="image/jpeg">
+</head>
+
+<body>
+	<div id="container">
 ~
-			</code></pre>
-		</div>
-	</body>
+	</div>
+</body>
+
 </html>

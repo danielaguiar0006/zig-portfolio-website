@@ -1,0 +1,17 @@
+<div id="homepage-banner" class="center">
+  <pre class="logo">
+██████╗░███████╗██╗░██████╗░███╗░░██╗
+██╔══██╗██╔════╝██║██╔════╝░████╗░██║
+██████╔╝█████╗░░██║██║░░██╗░██╔██╗██║
+██╔══██╗██╔══╝░░██║██║░░╚██╗██║╚████║
+██║░░██║███████╗██║╚██████╔╝██║░╚███║
+╚═╝░░╚═╝╚══════╝╚═╝░╚═════╝░╚═╝░░╚══╝</pre>
+  <div class="banner-text">
+    Portfolio Website<br>
+    Copyright (c) 2024 Daniel Aguiar<br>
+    Licensed under the MIT License (not yet)<br>
+
+    <br>Source:<br>
+    https://github.com/yo-reign/zig-portfolio-website
+  </div>
+</div>
