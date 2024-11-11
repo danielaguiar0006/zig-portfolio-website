@@ -13,7 +13,13 @@ fn on_request(r: zap.Request) void {
 
         // REDIRECT TO HOMEPAGE
         if (std.mem.eql(u8, the_path, "/") or std.mem.startsWith(u8, the_path, "/index")) {
-            r.redirectTo(HOMEPAGE_URI, .moved_permanently) catch return;
+            r.redirectTo(HOMEPAGE_URI, .moved_permanently) catch |err| {
+                r.setStatus(.internal_server_error);
+                r.sendBody("Internal Server Error") catch return;
+
+                std.debug.print("ERROR: {s}\n", .{@errorName(err)});
+                return;
+            };
 
             std.debug.print("REDIRECTING TO {s}\n", .{HOMEPAGE_URI});
         }
