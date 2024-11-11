@@ -9,6 +9,16 @@ body {
     font-family: monospace;
 }
 
+a {
+    color: #55f;
+    text-decoration: none;
+}
+
+a:visited {
+    color: #55f;
+    text-decoration: none;
+}
+
 .center {
     text-align: center;
 }
