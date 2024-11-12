@@ -37,9 +37,6 @@ pub fn init(allocator: std.mem.Allocator, path: []const u8) Self {
     content = std.fmt.allocPrint(allocator, "{s}", .{homepage_banner_template}) catch unreachable;
 
     // ASCII TABLE
-    ascii_table = AsciiTable.init(allocator, 2);
-    var about_table_entry = [_][]const u8{ "About", "This is a simple web server written in Zig." };
-    ascii_table.addRow(&about_table_entry) catch unreachable;
     // TODO: generate the actual table text and add it to the content
 
     return .{
