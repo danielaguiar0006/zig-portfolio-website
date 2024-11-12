@@ -8,14 +8,19 @@ const Self = @This();
 
 allocator: std.mem.Allocator = undefined,
 lists: std.ArrayList([][]const u8) = undefined,
-/// ! MUST NOT BE CHANGED AFTER INIT
+
+/// ! DO NOT MODIFY DIRECTLY
 columns_count: usize = undefined,
+
+/// ! DO NOT MODIFY DIRECTLY
+// TODO: each index holds a usize that represents the width of the column in char lengths
+// Make sure to check and always make sure its length is the same as columns_count
+//columns_widths: []usize = undefined,
 
 // Chars that make-up the table borders
 corner_char: u8 = '+',
 horizontal_char: u8 = '-',
 vertical_char: u8 = '|',
-
 // Probably not needed (instead return through methods):
 // rows_count: usize = undefined,
 // columns_count: usize = undefined,
@@ -44,7 +49,32 @@ pub fn addRow(self: *Self, row: [][]const u8) !void {
     try self.lists.append(row);
 }
 
-// TODO: pub fn GetAsciiTable(self: *Self) []const u8 {}
+pub fn GetAsciiTable(self: *Self) []const u8 {
+    var ascii_table: [1024]u8 = undefined;
+    var ascii_table_stream = std.io.fixedBufferStream(&ascii_table);
+    const ascii_table_writer = ascii_table_stream.writer();
+
+    ascii_table_writer.print("{c} {c}{c}{c} {c} ", .{ self.corner_char, self.horizontal_char, self.horizontal_char, self.horizontal_char, self.corner_char }) catch unreachable;
+    ascii_table_writer.print("{c}{c}{c} {c}\n", .{ self.horizontal_char, self.horizontal_char, self.horizontal_char, self.corner_char }) catch unreachable;
+    std.debug.print("Buffer:\n{s}\n", .{ascii_table});
+
+    for (self.lists.items) |row| {
+        for (row) |column| {
+            ascii_table_writer.print("{c}  {s}  ", .{ self.vertical_char, column }) catch unreachable;
+        }
+        ascii_table_writer.print("{c}\n", .{self.vertical_char}) catch unreachable;
+    }
+    ascii_table_writer.print("{c} {c}{c}{c} {c} ", .{ self.corner_char, self.horizontal_char, self.horizontal_char, self.horizontal_char, self.corner_char }) catch unreachable;
+    ascii_table_writer.print("{c}{c}{c} {c}", .{ self.horizontal_char, self.horizontal_char, self.horizontal_char, self.corner_char }) catch unreachable;
+
+    std.debug.print("Buffer:\n{s}\n", .{ascii_table});
+
+    // ? Not entirely sure which is the best way to return the slice
+    //return &ascii_table;
+    //return ascii_table[0..ascii_table.len];
+    return ascii_table_stream.getWritten();
+}
+
 // TODO: pub fn rowCount(self: *Self) usize { }
 // TODO: pub fn columnCount(self: *Self) usize { }
 
@@ -53,14 +83,15 @@ test "Adding rows to the table" {
     var table = init(allocator, 2);
     defer table.deinit();
 
-    // The first two should be OK (no error) and the last one should be an error
     var row1 = [_][]const u8{ "a", "b" };
     var row2 = [_][]const u8{ "c", "d" };
-    var row3 = [_][]const u8{ "e", "f", "g" };
+    var row3 = [_][]const u8{"e"};
+    var row4 = [_][]const u8{ "f", "g", "h", "i" };
 
     try table.addRow(&row1); // OK
     try table.addRow(&row2); // OK
     try std.testing.expectError(error.InvalidRowLength, table.addRow(&row3)); // ERROR
+    try std.testing.expectError(error.InvalidRowLength, table.addRow(&row4)); // ERROR
 
     std.debug.print("Table:\n{s}\n", .{table.lists.items});
 }
@@ -72,7 +103,6 @@ test "Memory scope" {
 
     {
         var row1 = [_][]const u8{ "a", "b" };
-
         try table.addRow(&row1); // OK
     }
 
@@ -81,3 +111,60 @@ test "Memory scope" {
 
     std.debug.print("Table:\n{s}\n", .{table.lists.items});
 }
+
+test "GetAsciiTable" {
+    const allocator = std.testing.allocator;
+    var table = init(allocator, 2);
+    defer table.deinit();
+
+    var row1 = [_][]const u8{ "a", "b" };
+    var row2 = [_][]const u8{ "c", "d" };
+
+    try table.addRow(&row1); // OK
+    try table.addRow(&row2); // OK
+
+    const expected_table =
+        \\+ --- + --- +
+        \\|  a  |  b  |
+        \\|  c  |  d  |
+        \\+ --- + --- +
+    ;
+    const generated_table = table.GetAsciiTable();
+    std.debug.print("Generated Table:\n{s}\n", .{generated_table});
+
+    try std.testing.expectEqualStrings(expected_table, generated_table);
+
+    //std.debug.print("Generated Table:\n{s}\n", .{generated_table});
+    //std.debug.print("Expected Table:\n{s}\n", .{expected_table});
+}
+
+// TODO:
+// test "Printing ascii table with two columns" {
+//     const allocator = std.testing.allocator;
+//     var table = init(allocator, 2);
+//     defer table.deinit();
+//
+//     var row1 = [_][]const u8{ "a", "b" };
+//     var row2 = [_][]const u8{ "c", "d" };
+//
+//     try table.addRow(&row1); // OK
+//     try table.addRow(&row2); // OK
+//
+//     std.testing.expectEqualStrings("+ ---", table.GetAsciiTable());
+//
+//     std.debug.print("Table:\n{s}\n", .{table.GetAsciiTable()});
+// }
+//
+// test "Printing ascii table with three columns" {
+//     const allocator = std.testing.allocator;
+//     var table = init(allocator, 3);
+//     defer table.deinit();
+//
+//     var row1 = [_][]const u8{ "a", "b", "c" };
+//     var row2 = [_][]const u8{ "d", "e", "f" };
+//
+//     try table.addRow(&row1); // OK
+//     try table.addRow(&row2); // OK
+//
+//     std.debug.print("Table:\n{s}\n", .{table.GetAsciiTable()});
+// }
