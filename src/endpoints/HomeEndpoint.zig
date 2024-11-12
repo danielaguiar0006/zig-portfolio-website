@@ -25,7 +25,7 @@ pub fn init(allocator: std.mem.Allocator, path: []const u8) Self {
     const html_template_reader = html_template_stream.reader();
 
     // WRITE TEMPLATE CONTENTS TO VARS
-    // NOTE: All of these that are alloced should be freed in deinit() method
+    // NOTE: Some of these are heap allocated and should be freed in the deinit() method
     html_template_top_bun = html_template_reader.readUntilDelimiterAlloc(allocator, '~', std.math.maxInt(usize)) catch unreachable;
     html_template_bottom_bun = html_template_reader.readAllAlloc(allocator, std.math.maxInt(usize)) catch unreachable;
 

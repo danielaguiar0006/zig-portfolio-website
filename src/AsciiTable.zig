@@ -2,6 +2,9 @@ const std = @import("std");
 
 const Self = @This();
 
+/// Used to create buffer inside GetAsciiTableBuf() method which represents a border row
+const MAX_BUFFER_TABLE_WIDTH: usize = 2048;
+
 /// Each index holds a usize value that represents the width of the column in char lengths
 /// NOTE: Make sure to check and always make sure the array.len is the same as columns_count
 columns_widths: []usize = undefined,
@@ -53,13 +56,15 @@ pub fn addRow(self: *Self, row: [][]const u8) !void {
 }
 
 // TODO: eventually seperate out into two methods: GetAsciiTableBuff() and GetAsciiTableAlloc()
+// and get rid of all the catch unreachables by handling errors properly
 /// Both writes to the buffer and returns a slice of the exact length written (the exact length of the ascii table returned)
+/// NOTE: There is a MAX_BUFFER_TABLE_WIDTH comptime value that should be adjusted if the table is too large
 pub fn GetAsciiTable(self: *Self, ascii_buffer: []u8) []const u8 {
     var ascii_table_stream = std.io.fixedBufferStream(ascii_buffer);
     const ascii_table_writer = ascii_table_stream.writer();
 
-    // Repeated_chars represent the top and bottom horizontal table borders
-    var repeated_chars: [1024]u8 = undefined; // HACK: For really large table widths this will be a problem, but it's fine for now...
+    // repeated_chars represent the top and bottom horizontal table borders
+    var repeated_chars: [MAX_BUFFER_TABLE_WIDTH]u8 = undefined; // NOTE: Adjust MAX_TABLE_WIDTH as needed
     var repeated_chars_stream = std.io.fixedBufferStream(&repeated_chars);
     const repeated_chars_writer = repeated_chars_stream.writer();
 
@@ -71,14 +76,13 @@ pub fn GetAsciiTable(self: *Self, ascii_buffer: []u8) []const u8 {
         repeated_chars_writer.print(" {c}", .{self.corner_char}) catch unreachable;
     }
 
-    for (0.., self.lists.items) |i, row| {
+    // Write the top border
+    ascii_table_writer.print("{s}", .{repeated_chars_stream.getWritten()}) catch unreachable;
+
+    // Write the rows
+    for (self.lists.items) |row| {
         for (0.., row) |j, column_value| {
             const current_column_width = self.columns_widths[j];
-
-            // Top left corner - Write top border
-            if (i == 0 and j == 0) {
-                ascii_table_writer.print("{s}", .{repeated_chars_stream.getWritten()}) catch unreachable;
-            }
 
             // First column of a row - Create a new line for the next row
             if (j == 0) {
@@ -94,19 +98,16 @@ pub fn GetAsciiTable(self: *Self, ascii_buffer: []u8) []const u8 {
                 ascii_table_writer.writeByteNTimes(' ', padding_amount) catch unreachable;
                 ascii_table_writer.print("{c}", .{self.vertical_char}) catch unreachable;
             }
-
-            // Bottom right corner - Write bottom border
-            if (i == self.lists.items.len - 1 and j == self.columns_count - 1) {
-                ascii_table_writer.print("\n{s}", .{repeated_chars_stream.getWritten()}) catch unreachable;
-            }
         }
     }
+    // Write the bottom border
+    ascii_table_writer.print("\n{s}", .{repeated_chars_stream.getWritten()}) catch unreachable;
 
     // Return a slice of the buffer that was written to
     return ascii_buffer[0..ascii_table_stream.pos];
 }
 
-// TODO: pub fn GetAsciiTableBuff(self: *Self, buffer: []u8) []const u8 {}
+// TODO: pub fn GetAsciiTableBuf(self: *Self, buffer: []u8) []const u8 {}
 // TODO: pub fn GetAsciiTableAlloc(self: *Self) []const u8 {}
 // TODO: pub fn rowCount(self: *Self) usize { }
 // TODO: pub fn columnCount(self: *Self) usize { }
@@ -140,7 +141,7 @@ test "Memory scope" {
         _ = i;
 
         var row1 = [_][]const u8{ "a", "b" };
-        try table.addRow(&row1); // OK
+        try table.addRow(&row1);
     }
 
     try std.testing.expectEqualStrings("a", table.lists.items[0][0]);
@@ -157,8 +158,8 @@ test "GetAsciiTable - Small column values" {
     var row1 = [_][]const u8{ "a", "b" };
     var row2 = [_][]const u8{ "c", "d" };
 
-    try table.addRow(&row1); // OK
-    try table.addRow(&row2); // OK
+    try table.addRow(&row1);
+    try table.addRow(&row2);
 
     const expected_table =
         \\+ --- + --- +
