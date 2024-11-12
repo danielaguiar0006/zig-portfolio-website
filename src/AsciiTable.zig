@@ -49,32 +49,34 @@ pub fn addRow(self: *Self, row: [][]const u8) !void {
     try self.lists.append(row);
 }
 
-pub fn GetAsciiTable(self: *Self) []const u8 {
-    var ascii_table: [1024]u8 = undefined;
-    var ascii_table_stream = std.io.fixedBufferStream(&ascii_table);
+// TODO: eventually seperate out into two methods: GetAsciiTableBuff() and GetAsciiTableAlloc()
+/// Both writes to the buffer or returns a slice of the exact length written (the exact length of the ascii table returned)
+pub fn GetAsciiTable(self: *Self, buffer: []u8) []const u8 {
+    var ascii_table_stream = std.io.fixedBufferStream(buffer);
     const ascii_table_writer = ascii_table_stream.writer();
 
-    ascii_table_writer.print("{c} {c}{c}{c} {c} ", .{ self.corner_char, self.horizontal_char, self.horizontal_char, self.horizontal_char, self.corner_char }) catch unreachable;
-    ascii_table_writer.print("{c}{c}{c} {c}\n", .{ self.horizontal_char, self.horizontal_char, self.horizontal_char, self.corner_char }) catch unreachable;
-    std.debug.print("Buffer:\n{s}\n", .{ascii_table});
+    for (0.., self.lists.items) |i, row| {
+        for (0.., row) |j, column_value| {
+            std.debug.print("column: {s}\ni: {d}\n", .{ column_value, i });
+            if (i == 0 and j == 0) {
+                ascii_table_writer.print("{c} {c}{c}{c} {c} ", .{ self.corner_char, self.horizontal_char, self.horizontal_char, self.horizontal_char, self.corner_char }) catch unreachable;
+                ascii_table_writer.print("{c}{c}{c} {c}\n", .{ self.horizontal_char, self.horizontal_char, self.horizontal_char, self.corner_char }) catch unreachable;
+            }
 
-    for (self.lists.items) |row| {
-        for (row) |column| {
-            ascii_table_writer.print("{c}  {s}  ", .{ self.vertical_char, column }) catch unreachable;
+            ascii_table_writer.print("{c}  {s}  ", .{ self.vertical_char, column_value }) catch unreachable;
         }
+
         ascii_table_writer.print("{c}\n", .{self.vertical_char}) catch unreachable;
     }
     ascii_table_writer.print("{c} {c}{c}{c} {c} ", .{ self.corner_char, self.horizontal_char, self.horizontal_char, self.horizontal_char, self.corner_char }) catch unreachable;
     ascii_table_writer.print("{c}{c}{c} {c}", .{ self.horizontal_char, self.horizontal_char, self.horizontal_char, self.corner_char }) catch unreachable;
 
-    std.debug.print("Buffer:\n{s}\n", .{ascii_table});
-
-    // ? Not entirely sure which is the best way to return the slice
-    //return &ascii_table;
-    //return ascii_table[0..ascii_table.len];
-    return ascii_table_stream.getWritten();
+    // Return a slice of the buffer that was written to
+    return buffer[0..ascii_table_stream.pos];
 }
 
+// TODO: pub fn GetAsciiTableBuff(self: *Self, buffer: []u8) []const u8 {}
+// TODO: pub fn GetAsciiTableAlloc(self: *Self) []const u8 {}
 // TODO: pub fn rowCount(self: *Self) usize { }
 // TODO: pub fn columnCount(self: *Self) usize { }
 
@@ -108,8 +110,6 @@ test "Memory scope" {
 
     try std.testing.expectEqualStrings("a", table.lists.items[0][0]);
     try std.testing.expectEqualStrings("b", table.lists.items[0][1]);
-
-    std.debug.print("Table:\n{s}\n", .{table.lists.items});
 }
 
 test "GetAsciiTable" {
@@ -129,13 +129,12 @@ test "GetAsciiTable" {
         \\|  c  |  d  |
         \\+ --- + --- +
     ;
-    const generated_table = table.GetAsciiTable();
+
+    var buffer: [2048]u8 = undefined;
+    const generated_table = table.GetAsciiTable(&buffer);
     std.debug.print("Generated Table:\n{s}\n", .{generated_table});
 
     try std.testing.expectEqualStrings(expected_table, generated_table);
-
-    //std.debug.print("Generated Table:\n{s}\n", .{generated_table});
-    //std.debug.print("Expected Table:\n{s}\n", .{expected_table});
 }
 
 // TODO:

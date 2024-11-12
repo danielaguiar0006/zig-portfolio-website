@@ -1,3 +1,5 @@
+// TODO: Go throughout the whole codebase and actually handle errors instead of just doing "catch unreachable"
+
 const std = @import("std");
 const zap = @import("zap");
 
