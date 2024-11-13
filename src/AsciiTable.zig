@@ -15,8 +15,11 @@ const Self = @This();
 /// Used to create buffer inside generateTableToBuf() method which represents a border row.
 const MAX_BUFFER_TABLE_WIDTH: usize = 2048;
 
-/// Used to (possibly) hold the generated table inside generateTableAlloc() method.
+/// ! DO NOT MODIFY DIRECTLY
+///
+/// Used to (possibly) hold the generated table from the generateTableAlloc() method.
 /// Memory is automatically freed when the AsciiTable struct is deinited.
+///
 /// NOTE: This is not necessary if the caller is using the generateTableToBuf() method
 /// instead, and if generateTableAlloc() is never called this remains undefined.
 generated_alloc_table: ?std.ArrayList(u8) = null,
