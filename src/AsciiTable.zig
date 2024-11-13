@@ -15,6 +15,12 @@ const Self = @This();
 /// Used to create buffer inside generateTableToBuf() method which represents a border row.
 const MAX_BUFFER_TABLE_WIDTH: usize = 2048;
 
+/// Used to (possibly) hold the generated table inside generateTableAlloc() method.
+/// Memory is automatically freed when the AsciiTable struct is deinited.
+/// NOTE: This is not necessary if the caller is using the generateTableToBuf() method
+/// instead, and if generateTableAlloc() is never called this remains undefined.
+generated_alloc_table: ?std.ArrayList(u8) = null,
+
 /// Each index holds a usize value that represents the width of the column in char lengths.
 /// Also used to calculate the column count.
 columns_widths: []usize = undefined,
@@ -31,8 +37,8 @@ vertical_char: u8 = '|',
 
 pub fn init(allocator: std.mem.Allocator, column_widths: []usize) Self {
     return .{
-        .allocator = allocator,
         .lists = std.ArrayList([][]const u8).init(allocator),
+        .allocator = allocator,
         .columns_widths = column_widths,
     };
 }
@@ -46,10 +52,9 @@ pub fn deinit(self: *Self) void {
     }
     self.lists.deinit();
 
-    // ?: Consider making alloc_ascii_table member variable and freeing it in deinit() method,
-    // so instead of having the generateTableAlloc() method, we instead have a generateAsciiTableAlloc()
-    // method that generates the ascii table into the alloc_ascii_table member variable. Which then gets
-    // freed here in the deinit() method.
+    if (self.generated_alloc_table) |generated_table| {
+        generated_table.deinit();
+    }
 }
 
 /// Returns the number of rows in the table.
@@ -124,16 +129,13 @@ pub fn generateTableToBuf(self: *Self, ascii_buffer: []u8) ![]const u8 {
     return ascii_buffer[0..ascii_table_stream.pos];
 }
 
-/// Generates an ASCII table and returns it as an `std.ArrayList(u8)`.
-/// The caller is responsible for freeing the allocated memory.
+/// Generates an ASCII table and assigns it to `generated_alloc_table` member variable.
+/// generated_alloc_table is automatically freed when the AsciiTable struct is deinited.
 ///
 /// Parameters: `self`: Pointer to the AsciiTable struct itself.
 ///
-/// Returns: An `std.ArrayList(u8)` containing the ASCII table.
-/// NOTE: Caller will be responsible for freeing the returned memory.
-///
 /// Errors: Returns an error if any memory allocations or writes fail.
-pub fn generateTableAlloc(self: *Self) !std.ArrayList(u8) {
+pub fn generateTableAlloc(self: *Self) !void {
     // Get the necessary streams and writers
     var ascii_table = std.ArrayList(u8).init(self.allocator);
     const ascii_table_writer = ascii_table.writer();
@@ -150,8 +152,7 @@ pub fn generateTableAlloc(self: *Self) !std.ArrayList(u8) {
     try self.writeRows(&ascii_table_writer);
     try ascii_table_writer.print("\n{s}", .{repeated_chars.items}); // Bottom border
 
-    // Return the ArrayList itself - NOTE: Caller will be responsible for freeing the memory
-    return ascii_table;
+    self.generated_alloc_table = ascii_table;
 }
 
 fn writeRows(self: *Self, ascii_table_writer: anytype) !void {
@@ -207,8 +208,8 @@ test "Adding rows to the table" {
 test "addRow() - Memory scope" {
     const allocator = std.testing.allocator;
 
-    var table_widths = [_]usize{ 3, 3 };
-    var table = init(allocator, &table_widths);
+    var column_widths = [_]usize{ 3, 3 };
+    var table = init(allocator, &column_widths);
     defer table.deinit();
 
     for (0..1) |i| {
@@ -237,8 +238,8 @@ test "addRow() - Memory scope" {
 test "generateTableToBuf() - Small column values" {
     const allocator = std.testing.allocator;
 
-    var table_widths = [_]usize{ 3, 3 };
-    var table = init(allocator, &table_widths);
+    var column_widths = [_]usize{ 3, 3 };
+    var table = init(allocator, &column_widths);
     defer table.deinit();
 
     var row1 = [_][]const u8{ "a", "b" };
@@ -252,6 +253,32 @@ test "generateTableToBuf() - Small column values" {
         \\| a   | b   |
         \\| c   | d   |
         \\+ --- + --- +
+    ;
+
+    var buffer: [2048]u8 = undefined;
+    const generated_table = try table.generateTableToBuf(&buffer);
+
+    try std.testing.expectEqualStrings(expected_table, generated_table);
+}
+
+test "generateTableToBuf() - large/overflowing column values" {
+    const allocator = std.testing.allocator;
+
+    var column_widths = [_]usize{ 5, 3, 10, 1 };
+    var table = init(allocator, &column_widths);
+    defer table.deinit();
+
+    var row1 = [_][]const u8{ "Daniel", "Aguiar", "yo-reign", "yo" };
+    var row2 = [_][]const u8{ "a", "-", " ", "" };
+
+    try table.addRow(&row1);
+    try table.addRow(&row2);
+
+    const expected_table =
+        \\+ ----- + --- + ---------- + - +
+        \\| Danie | Agu | yo-reign   | y |
+        \\| a     | -   |            |   |
+        \\+ ----- + --- + ---------- + - +
     ;
 
     var buffer: [2048]u8 = undefined;
@@ -263,8 +290,8 @@ test "generateTableToBuf() - Small column values" {
 test "generateTableAlloc() - Small column values" {
     const allocator = std.testing.allocator;
 
-    var table_widths = [_]usize{ 3, 3 };
-    var table = init(allocator, &table_widths);
+    var column_widths = [_]usize{ 3, 3 };
+    var table = init(allocator, &column_widths);
     defer table.deinit();
 
     var row1 = [_][]const u8{ "a", "b" };
@@ -280,43 +307,16 @@ test "generateTableAlloc() - Small column values" {
         \\+ --- + --- +
     ;
 
-    const generated_table = try table.generateTableAlloc();
-    defer generated_table.deinit();
+    try table.generateTableAlloc();
 
-    try std.testing.expectEqualStrings(expected_table, generated_table.items);
-}
-
-test "generateTableToBuf() - large/overflowing column values" {
-    const allocator = std.testing.allocator;
-
-    var table_widths = [_]usize{ 5, 3, 10, 1 };
-    var table = init(allocator, &table_widths);
-    defer table.deinit();
-
-    var row1 = [_][]const u8{ "Daniel", "Aguiar", "yo-reign", "yo" };
-    var row2 = [_][]const u8{ "a", "-", " ", "" };
-
-    try table.addRow(&row1);
-    try table.addRow(&row2);
-
-    const expected_table =
-        \\+ ----- + --- + ---------- + - +
-        \\| Danie | Agu | yo-reign   | y |
-        \\| a     | -   |            |   |
-        \\+ ----- + --- + ---------- + - +
-    ;
-
-    var buffer: [2048]u8 = undefined;
-    const generated_table = try table.generateTableToBuf(&buffer);
-
-    try std.testing.expectEqualStrings(expected_table, generated_table);
+    try std.testing.expectEqualStrings(expected_table, table.generated_alloc_table.?.items);
 }
 
 test "generateTableAlloc() - large/overflowing column values" {
     const allocator = std.testing.allocator;
 
-    var table_widths = [_]usize{ 5, 3, 10, 1 };
-    var table = init(allocator, &table_widths);
+    var column_widths = [_]usize{ 5, 3, 10, 1 };
+    var table = init(allocator, &column_widths);
     defer table.deinit();
 
     var row1 = [_][]const u8{ "Daniel", "Aguiar", "yo-reign", "yo" };
@@ -332,8 +332,7 @@ test "generateTableAlloc() - large/overflowing column values" {
         \\+ ----- + --- + ---------- + - +
     ;
 
-    const generated_table = try table.generateTableAlloc();
-    defer generated_table.deinit();
+    try table.generateTableAlloc();
 
-    try std.testing.expectEqualStrings(expected_table, generated_table.items);
+    try std.testing.expectEqualStrings(expected_table, table.generated_alloc_table.?.items);
 }
