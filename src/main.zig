@@ -1,4 +1,5 @@
 // TODO: Go throughout the whole codebase and actually handle errors instead of just doing "catch unreachable"
+// TODO: Add a default 404 endpoint
 
 const std = @import("std");
 const zap = @import("zap");

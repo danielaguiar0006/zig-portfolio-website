@@ -1,3 +1,5 @@
+// TODO: Add support for html links inside column values
+
 //! ASCII Table Generator in Zig.
 //!
 //! Provides functionality to create and generate ASCII tables with customizable column widths and border characters.

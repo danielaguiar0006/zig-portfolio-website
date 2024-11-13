@@ -11,8 +11,8 @@ allocator: std.mem.Allocator = undefined,
 // TODO: HTML Template should probably be available to every/most endpoints, so make it somehow...
 var html_template_top_bun: []const u8 = undefined;
 var html_template_bottom_bun: []const u8 = undefined;
-var content: []const u8 = undefined;
 var ascii_table: AsciiTable = undefined;
+var content: []const u8 = undefined;
 
 pub fn init(allocator: std.mem.Allocator, path: []const u8) Self {
     // READ TEMPLATES
@@ -29,15 +29,25 @@ pub fn init(allocator: std.mem.Allocator, path: []const u8) Self {
     html_template_top_bun = html_template_reader.readUntilDelimiterAlloc(allocator, '~', std.math.maxInt(usize)) catch unreachable;
     html_template_bottom_bun = html_template_reader.readAllAlloc(allocator, std.math.maxInt(usize)) catch unreachable;
 
-    // This causes whitespace between each line in the dom
-    // content =
-    //     \\<h1>Hello from Zig and ZAP!!!</h1>
-    //     \\<p>This is a simple web server written in Zig.</p>
-    // ;
-    content = std.fmt.allocPrint(allocator, "{s}", .{homepage_banner_template}) catch unreachable;
-
     // ASCII TABLE
-    // TODO: generate the actual table text and add it to the content
+    var column_widths = [_]usize{ 10, 30 };
+    ascii_table = AsciiTable.init(allocator, &column_widths);
+
+    var row1 = [_][]const u8{ "YouTube", "https://www.youtube.com" };
+    var row2 = [_][]const u8{ "GitHub", "https://github.com/yo-reign" };
+    var row3 = [_][]const u8{ "LinkedIn", "https://www.linkedin.com/in/daniel-aguiar-reign" };
+
+    ascii_table.addRow(&row1) catch unreachable;
+    ascii_table.addRow(&row2) catch unreachable;
+    ascii_table.addRow(&row3) catch unreachable;
+
+    ascii_table.generateTableAlloc() catch unreachable;
+
+    // WRITE CONTENT - writing only once through allocPrint() simplifies the deinit() method
+    content = std.fmt.allocPrint(allocator, "{s}\n<pre>{s}</pre>", .{
+        homepage_banner_template,
+        ascii_table.generated_alloc_table.?.items,
+    }) catch unreachable;
 
     return .{
         .endpoint = zap.Endpoint.init(.{
@@ -51,8 +61,8 @@ pub fn init(allocator: std.mem.Allocator, path: []const u8) Self {
 pub fn deinit(self: *Self) void {
     self.allocator.free(html_template_top_bun);
     self.allocator.free(html_template_bottom_bun);
-    self.allocator.free(content);
     ascii_table.deinit();
+    self.allocator.free(content);
 }
 
 pub fn getEndpoint(self: *Self) *zap.Endpoint {
