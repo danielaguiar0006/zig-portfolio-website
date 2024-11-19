@@ -19,11 +19,11 @@ const MAX_BUFFER_TABLE_WIDTH: usize = 2048;
 
 /// ! DO NOT MODIFY DIRECTLY
 ///
-/// Used to (possibly) hold the generated table from the generateTableAlloc() method.
+/// Used to (possibly?) hold the generated table from the generateTableAlloc() method.
 /// Memory is automatically freed when the AsciiTable struct is deinited.
 ///
 /// NOTE: This is not necessary if the caller is using the generateTableToBuf() method
-/// instead, and if generateTableAlloc() is never called this remains undefined.
+/// instead, and if generateTableAlloc() is never called this remains null.
 generated_alloc_table: ?std.ArrayList(u8) = null,
 
 /// Each index holds a usize value that represents the width of the column in char lengths.
