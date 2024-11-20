@@ -10,6 +10,10 @@
 //! - Add rows using `addRow(<row>)`.
 //! - Generate the table using `generateTableToBuf()` or `generateTableAlloc()`.
 
+// TODO: Text color options
+// TODO: Add Row numbering support
+// TODO: Add border and number color options
+
 const std = @import("std");
 
 const Self = @This();
@@ -40,8 +44,7 @@ generated_alloc_table: ?std.ArrayList(u8) = null,
 /// Also used to calculate the column count.
 columns_widths: []usize = undefined,
 
-// TODO: Add Headers
-// header_row: ?[]Cell = null,
+has_header_row: bool = false,
 
 /// Outer list represents every row and column.
 /// Inner list each represent a row themselves and each index represents a column.
@@ -138,7 +141,7 @@ pub fn generateTableToBuf(self: *Self, ascii_buffer: []u8) ![]const u8 {
 
     // Write the ascii table
     try ascii_table_writer.print("{s}", .{repeated_chars_stream.getWritten()}); // Top border
-    try self.writeRows(&ascii_table_writer);
+    try self.writeRows(&ascii_table_writer, repeated_chars_stream.getWritten());
     try ascii_table_writer.print("\n{s}", .{repeated_chars_stream.getWritten()}); // Bottom border
 
     // Return a slice of the buffer that was written to
@@ -165,14 +168,14 @@ pub fn generateTableAlloc(self: *Self) !void {
 
     // Write the ascii table
     try ascii_table_writer.print("{s}", .{repeated_chars.items}); // Top border
-    try self.writeRows(&ascii_table_writer);
+    try self.writeRows(&ascii_table_writer, repeated_chars.items);
     try ascii_table_writer.print("\n{s}", .{repeated_chars.items}); // Bottom border
 
     self.generated_alloc_table = ascii_table;
 }
 
-fn writeRows(self: *Self, ascii_table_writer: anytype) !void {
-    for (self.lists.items) |row| {
+fn writeRows(self: *Self, ascii_table_writer: anytype, repeated_chars: []u8) !void {
+    for (0.., self.lists.items) |i, row| {
         for (0.., row) |j, cell| {
             // used to close opened tags
             var closing_tags = std.ArrayList([]const u8).init(self.allocator);
@@ -231,6 +234,11 @@ fn writeRows(self: *Self, ascii_table_writer: anytype) !void {
 
             // Close vertical char
             try ascii_table_writer.print(" {c}", .{self.vertical_char});
+
+            // Add a header row separator
+            if (self.has_header_row and i == 0 and j == row.len - 1) {
+                try ascii_table_writer.print("\n{s}", .{repeated_chars});
+            }
         }
     }
 }
@@ -362,13 +370,16 @@ test "generateTableAlloc() - large/overflowing column values" {
     try std.testing.expectEqualStrings(expected_table, table.generated_alloc_table.?.items);
 }
 
-test "Table with Cell options" {
+test "Table with Cell options and Header Row" {
     const allocator = std.testing.allocator;
 
     var column_widths = [_]usize{ 8, 4 };
     var table = init(allocator, &column_widths);
     defer table.deinit();
 
+    table.has_header_row = true;
+
+    var row_header = [_]Cell{ .{ .display_text = "Website", .is_bold = true }, .{ .display_text = "Link", .is_bold = true } };
     var row1 = [_]Cell{ .{ .display_text = "Youtube" }, .{ .display_text = "Link", .link = "https://www.youtube.com" } };
     var row2 = [_]Cell{ .{ .display_text = "ysap" }, .{ .display_text = "Link", .link = "https://www.ysap.sh", .open_in_new_tab = true } };
     var row3 = [_]Cell{ .{ .display_text = "GitHub" }, .{ .display_text = "Lin", .link = "https://github.com/yo-reign", .is_bold = true } };
@@ -379,12 +390,15 @@ test "Table with Cell options" {
         .is_bold = true,
     } };
 
+    try table.addRow(&row_header);
     try table.addRow(&row1);
     try table.addRow(&row2);
     try table.addRow(&row3);
     try table.addRow(&row4);
 
     const expected_table =
+        \\+ -------- + ---- +
+        \\| <b>Website</b>  | <b>Link</b> |
         \\+ -------- + ---- +
         \\| Youtube  | <a href="https://www.youtube.com">Link</a> |
         \\| ysap     | <a href="https://www.ysap.sh" target="_blank">Link</a> |

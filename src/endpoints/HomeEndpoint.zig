@@ -33,10 +33,11 @@ pub fn init(allocator: std.mem.Allocator, path: []const u8) Self {
     // ASCII TABLE
     var column_widths = [_]usize{ 10, 30 };
     ascii_table = AsciiTable.init(allocator, &column_widths);
+    ascii_table.has_header_row = true;
 
     var row1 = [_]Cell{ .{ .display_text = "WEBSITES", .is_bold = true }, .{ .display_text = "LINKS", .is_bold = true } };
     var row2 = [_]Cell{ .{ .display_text = "YouTube" }, .{ .display_text = "TODO: Update this link", .link = "https://www.youtube.com", .open_in_new_tab = true } };
-    var row3 = [_]Cell{ .{ .display_text = "GitHub" }, .{ .display_text = "yo-reign", .link = "https://github.com/yo-reign", .open_in_new_tab = true } };
+    var row3 = [_]Cell{ .{ .display_text = "GitHub" }, .{ .display_text = "yo-reign", .link = "https://github.com/yo-reign", .open_in_new_tab = true, .is_bold = true } };
     var row4 = [_]Cell{ .{ .display_text = "LinkedIn" }, .{ .display_text = "daniel-aguiar-reign", .link = "https://www.linkedin.com/in/daniel-aguiar-reign", .open_in_new_tab = true } };
 
     ascii_table.addRow(&row1) catch unreachable;
