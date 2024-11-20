@@ -2,6 +2,7 @@ const std = @import("std");
 const zap = @import("zap");
 
 const AsciiTable = @import("../AsciiTable.zig");
+const Cell = @import("../AsciiTable.zig").Cell;
 
 pub const Self = @This();
 
@@ -33,9 +34,9 @@ pub fn init(allocator: std.mem.Allocator, path: []const u8) Self {
     var column_widths = [_]usize{ 10, 30 };
     ascii_table = AsciiTable.init(allocator, &column_widths);
 
-    var row1 = [_][]const u8{ "YouTube", "https://www.youtube.com" };
-    var row2 = [_][]const u8{ "GitHub", "https://github.com/yo-reign" };
-    var row3 = [_][]const u8{ "LinkedIn", "https://www.linkedin.com/in/daniel-aguiar-reign" };
+    var row1 = [_]Cell{ .{ .display_text = "YouTube" }, .{ .display_text = "TODO: Update this link", .link = "https://www.youtube.com" } };
+    var row2 = [_]Cell{ .{ .display_text = "GitHub" }, .{ .display_text = "yo-reign", .link = "https://github.com/yo-reign" } };
+    var row3 = [_]Cell{ .{ .display_text = "LinkedIn" }, .{ .display_text = "daniel-aguiar-reign", .link = "https://www.linkedin.com/in/daniel-aguiar-reign" } };
 
     ascii_table.addRow(&row1) catch unreachable;
     ascii_table.addRow(&row2) catch unreachable;
@@ -43,7 +44,7 @@ pub fn init(allocator: std.mem.Allocator, path: []const u8) Self {
 
     ascii_table.generateTableAlloc() catch unreachable;
 
-    // WRITE CONTENT - writing only once through allocPrint() simplifies the deinit() method
+    // WRITE CONTENT - NOTE: writing only once through allocPrint() simplifies the deinit() method
     content = std.fmt.allocPrint(allocator, "{s}\n<pre>{s}</pre>", .{
         homepage_banner_template,
         ascii_table.generated_alloc_table.?.items,

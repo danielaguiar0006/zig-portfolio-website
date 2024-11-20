@@ -1,5 +1,3 @@
-// TODO: Add support for html links inside column values
-
 //! ASCII Table Generator in Zig.
 //!
 //! Provides functionality to create and generate ASCII tables with customizable column widths and border characters.
@@ -7,12 +5,20 @@
 //!
 //! Usage:
 //! - Initialize the table with `init`, specifying the allocator and column widths.
-//! - Add rows using `addRow`.
-//! - Generate the table using `generateTableToBuf` or `generateTableAlloc`.
+//! - Create a row by create an array of `Cell` structs ie:
+//!     `var row1 = [_]Cell{ .{ .display_text = "a" }, .{ .display_text = "b", .link = "https://example.com" } };`
+//! - Add rows using `addRow(<row>)`.
+//! - Generate the table using `generateTableToBuf()` or `generateTableAlloc()`.
 
 const std = @import("std");
 
 const Self = @This();
+
+pub const Cell = struct {
+    display_text: []const u8,
+    link: ?[]const u8 = null,
+    // TODO: open_in_new_tab: bool = true,
+};
 
 /// Used to create buffer inside generateTableToBuf() method which represents a border row.
 const MAX_BUFFER_TABLE_WIDTH: usize = 2048;
@@ -32,7 +38,7 @@ columns_widths: []usize = undefined,
 
 /// Outer list represents every row and column.
 /// Inner list each represent a row themselves and each index represents a column.
-lists: std.ArrayList([][]const u8) = undefined,
+lists: std.ArrayList([]Cell) = undefined,
 allocator: std.mem.Allocator = undefined,
 
 // Chars that make-up the table borders
@@ -42,7 +48,7 @@ vertical_char: u8 = '|',
 
 pub fn init(allocator: std.mem.Allocator, column_widths: []usize) Self {
     return .{
-        .lists = std.ArrayList([][]const u8).init(allocator),
+        .lists = std.ArrayList([]Cell).init(allocator),
         .allocator = allocator,
         .columns_widths = column_widths,
     };
@@ -50,9 +56,14 @@ pub fn init(allocator: std.mem.Allocator, column_widths: []usize) Self {
 
 pub fn deinit(self: *Self) void {
     for (self.lists.items) |row| {
-        for (row) |column| {
-            self.allocator.free(column);
-        }
+        // Don't need this because only rows are allocated and freed
+        // for (row) |cell| {
+        //     self.allocator.free(cell.display_text);
+        //     if (cell.link) |link| {
+        //         self.allocator.free(link);
+        //     }
+        // }
+
         self.allocator.free(row);
     }
     self.lists.deinit();
@@ -76,14 +87,10 @@ pub fn columnCount(self: *Self) usize {
 ///
 /// Parameters:
 /// - `self`: Pointer to the struct containing the table configuration.
-/// - `row`: A 2D array of `const u8` representing the row to be added.
+/// - `row`: An array of `Cell`s representing the row to be added.
 ///
 /// Errors: Returns `error.InvalidRowLength` if the row length does not match the number of columns.
-///
-/// NOTE: to add a row it must be done in a similar manner as the following:
-/// var table_entry = \[_\]\[\]const u8{ "a", "b" };
-/// try ascii_table.addRow(&table_entry);
-pub fn addRow(self: *Self, row: [][]const u8) !void {
+pub fn addRow(self: *Self, row: []Cell) !void {
     if (row.len != self.columnCount()) {
         // Commmented out for being to noisy when testing
         // std.debug.print("ERROR: Row length does not match columns count\n", .{});
@@ -91,12 +98,9 @@ pub fn addRow(self: *Self, row: [][]const u8) !void {
         return error.InvalidRowLength;
     }
 
-    // Copy the row into a new array of []const u8 to avoid dangling pointers
-    var row_copy = try self.allocator.alloc([]u8, row.len);
-    for (0.., row) |i, column| {
-        row_copy[i] = try self.allocator.alloc(u8, column.len);
-        std.mem.copyForwards(u8, row_copy[i], column);
-    }
+    // Copy the row into a new array to avoid dangling pointers
+    const row_copy = try self.allocator.alloc(Cell, row.len);
+    std.mem.copyForwards(Cell, row_copy, row);
 
     try self.lists.append(row_copy);
 }
@@ -162,7 +166,7 @@ pub fn generateTableAlloc(self: *Self) !void {
 
 fn writeRows(self: *Self, ascii_table_writer: anytype) !void {
     for (self.lists.items) |row| {
-        for (0.., row) |j, column_value| {
+        for (0.., row) |j, cell| {
             const current_column_width = self.columns_widths[j];
 
             // First column of a row - Create a new line for the next row
@@ -171,11 +175,21 @@ fn writeRows(self: *Self, ascii_table_writer: anytype) !void {
             }
 
             // Write the column value into the table
-            if (column_value.len > current_column_width) {
-                try ascii_table_writer.print(" {s} {c}", .{ column_value[0..current_column_width], self.vertical_char });
+            if (cell.display_text.len > current_column_width) {
+                if (cell.link) |link| {
+                    try ascii_table_writer.print(" <a href=\"{s}\">{s}</a>", .{ link, cell.display_text[0..current_column_width] });
+                    try ascii_table_writer.print(" {c}", .{self.vertical_char});
+                } else {
+                    try ascii_table_writer.print(" {s} {c}", .{ cell.display_text[0..current_column_width], self.vertical_char });
+                }
             } else {
-                const padding_amount = current_column_width - column_value.len;
-                try ascii_table_writer.print(" {s} ", .{column_value});
+                if (cell.link) |link| {
+                    try ascii_table_writer.print(" <a href=\"{s}\">{s}</a> ", .{ link, cell.display_text });
+                } else {
+                    try ascii_table_writer.print(" {s} ", .{cell.display_text});
+                }
+
+                const padding_amount = current_column_width - cell.display_text.len;
                 try ascii_table_writer.writeByteNTimes(' ', padding_amount);
                 try ascii_table_writer.print("{c}", .{self.vertical_char});
             }
@@ -199,10 +213,10 @@ test "Adding rows to the table" {
     var table = init(allocator, &table_widths);
     defer table.deinit();
 
-    var row1 = [_][]const u8{ "a", "b" };
-    var row2 = [_][]const u8{ "c", "d" };
-    var row3 = [_][]const u8{"e"};
-    var row4 = [_][]const u8{ "f", "g", "h", "i" };
+    var row1 = [_]Cell{ .{ .display_text = "a" }, .{ .display_text = "b" } };
+    var row2 = [_]Cell{ .{ .display_text = "c" }, .{ .display_text = "d" } };
+    var row3 = [_]Cell{.{ .display_text = "e" }};
+    var row4 = [_]Cell{ .{ .display_text = "f" }, .{ .display_text = "g" }, .{ .display_text = "h" }, .{ .display_text = "i" } };
 
     try table.addRow(&row1); // OK
     try table.addRow(&row2); // OK
@@ -220,24 +234,18 @@ test "addRow() - Memory scope" {
     for (0..1) |i| {
         _ = i;
 
-        var row1: [][]u8 = undefined;
-        row1 = try allocator.alloc([]u8, 2);
+        var row1: []Cell = undefined;
+        row1 = try allocator.alloc(Cell, 2);
 
-        row1[0] = try allocator.alloc(u8, 1);
-        row1[1] = try allocator.alloc(u8, 1);
-        std.mem.copyForwards(u8, row1[0], "a");
-        std.mem.copyForwards(u8, row1[1], "b");
+        row1[0] = .{ .display_text = "a" };
+        row1[1] = .{ .display_text = "b" };
 
         try table.addRow(row1);
-
-        for (row1) |column| {
-            allocator.free(column);
-        }
         allocator.free(row1);
     }
 
-    try std.testing.expectEqualStrings("a", table.lists.items[0][0]);
-    try std.testing.expectEqualStrings("b", table.lists.items[0][1]);
+    try std.testing.expectEqualStrings("a", table.lists.items[0][0].display_text);
+    try std.testing.expectEqualStrings("b", table.lists.items[0][1].display_text);
 }
 
 test "generateTableToBuf() - Small column values" {
@@ -247,8 +255,8 @@ test "generateTableToBuf() - Small column values" {
     var table = init(allocator, &column_widths);
     defer table.deinit();
 
-    var row1 = [_][]const u8{ "a", "b" };
-    var row2 = [_][]const u8{ "c", "d" };
+    var row1 = [_]Cell{ .{ .display_text = "a" }, .{ .display_text = "b" } };
+    var row2 = [_]Cell{ .{ .display_text = "c" }, .{ .display_text = "d" } };
 
     try table.addRow(&row1);
     try table.addRow(&row2);
@@ -273,8 +281,8 @@ test "generateTableToBuf() - large/overflowing column values" {
     var table = init(allocator, &column_widths);
     defer table.deinit();
 
-    var row1 = [_][]const u8{ "Daniel", "Aguiar", "yo-reign", "yo" };
-    var row2 = [_][]const u8{ "a", "-", " ", "" };
+    var row1 = [_]Cell{ .{ .display_text = "Daniel" }, .{ .display_text = "Aguiar" }, .{ .display_text = "yo-reign" }, .{ .display_text = "yo" } };
+    var row2 = [_]Cell{ .{ .display_text = "a" }, .{ .display_text = "-" }, .{ .display_text = " " }, .{ .display_text = "" } };
 
     try table.addRow(&row1);
     try table.addRow(&row2);
@@ -299,8 +307,8 @@ test "generateTableAlloc() - Small column values" {
     var table = init(allocator, &column_widths);
     defer table.deinit();
 
-    var row1 = [_][]const u8{ "a", "b" };
-    var row2 = [_][]const u8{ "c", "d" };
+    var row1 = [_]Cell{ .{ .display_text = "a" }, .{ .display_text = "b" } };
+    var row2 = [_]Cell{ .{ .display_text = "c" }, .{ .display_text = "d" } };
 
     try table.addRow(&row1);
     try table.addRow(&row2);
@@ -324,8 +332,8 @@ test "generateTableAlloc() - large/overflowing column values" {
     var table = init(allocator, &column_widths);
     defer table.deinit();
 
-    var row1 = [_][]const u8{ "Daniel", "Aguiar", "yo-reign", "yo" };
-    var row2 = [_][]const u8{ "a", "-", " ", "" };
+    var row1 = [_]Cell{ .{ .display_text = "Daniel" }, .{ .display_text = "Aguiar" }, .{ .display_text = "yo-reign" }, .{ .display_text = "yo" } };
+    var row2 = [_]Cell{ .{ .display_text = "a" }, .{ .display_text = "-" }, .{ .display_text = " " }, .{ .display_text = "" } };
 
     try table.addRow(&row1);
     try table.addRow(&row2);
@@ -335,6 +343,34 @@ test "generateTableAlloc() - large/overflowing column values" {
         \\| Danie | Agu | yo-reign   | y |
         \\| a     | -   |            |   |
         \\+ ----- + --- + ---------- + - +
+    ;
+
+    try table.generateTableAlloc();
+
+    try std.testing.expectEqualStrings(expected_table, table.generated_alloc_table.?.items);
+}
+
+test "Table with links" {
+    const allocator = std.testing.allocator;
+
+    var column_widths = [_]usize{ 8, 4 };
+    var table = init(allocator, &column_widths);
+    defer table.deinit();
+
+    var row1 = [_]Cell{ .{ .display_text = "Youtube" }, .{ .display_text = "Link", .link = "https://www.youtube.com" } };
+    var row2 = [_]Cell{ .{ .display_text = "GitHub" }, .{ .display_text = "Link", .link = "https://github.com/yo-reign" } };
+    var row3 = [_]Cell{ .{ .display_text = "LinkedIn" }, .{ .display_text = "Link", .link = "https://www.linkedin.com/in/daniel-aguiar-reign" } };
+
+    try table.addRow(&row1);
+    try table.addRow(&row2);
+    try table.addRow(&row3);
+
+    const expected_table =
+        \\+ -------- + ---- +
+        \\| Youtube  | <a href="https://www.youtube.com">Link</a> |
+        \\| GitHub   | <a href="https://github.com/yo-reign">Link</a> |
+        \\| LinkedIn | <a href="https://www.linkedin.com/in/daniel-aguiar-reign">Link</a> |
+        \\+ -------- + ---- +
     ;
 
     try table.generateTableAlloc();
