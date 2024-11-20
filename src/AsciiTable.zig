@@ -14,10 +14,14 @@ const std = @import("std");
 
 const Self = @This();
 
+/// Represents a cell in the table.
 pub const Cell = struct {
     display_text: []const u8,
     link: ?[]const u8 = null,
+
+    // Options
     open_in_new_tab: bool = false,
+    is_bold: bool = false,
 };
 
 /// Used to create buffer inside generateTableToBuf() method which represents a border row.
@@ -35,6 +39,9 @@ generated_alloc_table: ?std.ArrayList(u8) = null,
 /// Each index holds a usize value that represents the width of the column in char lengths.
 /// Also used to calculate the column count.
 columns_widths: []usize = undefined,
+
+// TODO: Add Headers
+// header_row: ?[]Cell = null,
 
 /// Outer list represents every row and column.
 /// Inner list each represent a row themselves and each index represents a column.
@@ -167,6 +174,11 @@ pub fn generateTableAlloc(self: *Self) !void {
 fn writeRows(self: *Self, ascii_table_writer: anytype) !void {
     for (self.lists.items) |row| {
         for (0.., row) |j, cell| {
+            // used to close opened tags
+            var closing_tags = std.ArrayList([]const u8).init(self.allocator);
+            defer closing_tags.deinit();
+
+            var padding_amount: usize = 0;
             const current_column_width = self.columns_widths[j];
 
             // First column of a row - Create a new line for the next row
@@ -174,34 +186,51 @@ fn writeRows(self: *Self, ascii_table_writer: anytype) !void {
                 try ascii_table_writer.print("\n{c}", .{self.vertical_char});
             }
 
-            // Write the column value into the table
-            if (cell.display_text.len > current_column_width) {
-                if (cell.link) |link| {
-                    if (cell.open_in_new_tab) {
-                        try ascii_table_writer.print(" <a href=\"{s}\" target=\"_blank\">{s}</a>", .{ link, cell.display_text[0..current_column_width] });
-                    } else {
-                        try ascii_table_writer.print(" <a href=\"{s}\">{s}</a>", .{ link, cell.display_text[0..current_column_width] });
-                    }
-                } else {
-                    try ascii_table_writer.print(" {s}", .{cell.display_text[0..current_column_width]});
-                }
+            // Prepend a space to the cell
+            try ascii_table_writer.print(" ", .{});
 
-                try ascii_table_writer.print(" {c}", .{self.vertical_char});
-            } else {
-                if (cell.link) |link| {
-                    if (cell.open_in_new_tab) {
-                        try ascii_table_writer.print(" <a href=\"{s}\" target=\"_blank\">{s}</a> ", .{ link, cell.display_text });
-                    } else {
-                        try ascii_table_writer.print(" <a href=\"{s}\">{s}</a> ", .{ link, cell.display_text });
-                    }
-                } else {
-                    try ascii_table_writer.print(" {s} ", .{cell.display_text});
+            // <a
+            if (cell.link) |link| {
+                try ascii_table_writer.print("<a href=\"{s}\"", .{link});
+                if (cell.open_in_new_tab) {
+                    try ascii_table_writer.print(" target=\"_blank\"", .{});
                 }
+                try ascii_table_writer.print(">", .{});
 
-                const padding_amount = current_column_width - cell.display_text.len;
-                try ascii_table_writer.writeByteNTimes(' ', padding_amount);
-                try ascii_table_writer.print("{c}", .{self.vertical_char});
+                try closing_tags.append("</a>");
             }
+            // >
+
+            // <b
+            if (cell.is_bold) {
+                try ascii_table_writer.print("<b>", .{});
+
+                try closing_tags.append("</b>");
+            }
+            // >
+
+            // Write cell display text
+            if (cell.display_text.len > current_column_width) {
+                try ascii_table_writer.print("{s}", .{cell.display_text[0..current_column_width]});
+            } else {
+                try ascii_table_writer.print("{s}", .{cell.display_text});
+
+                padding_amount = current_column_width - cell.display_text.len;
+            }
+
+            // Close opened tags
+            while (closing_tags.items.len > 0) {
+                const closing_tag = closing_tags.popOrNull();
+                try ascii_table_writer.print("{s}", .{closing_tag.?});
+            }
+
+            // Add necessary padding
+            if (padding_amount > 0) {
+                try ascii_table_writer.writeByteNTimes(' ', padding_amount);
+            }
+
+            // Close vertical char
+            try ascii_table_writer.print(" {c}", .{self.vertical_char});
         }
     }
 }
@@ -333,7 +362,7 @@ test "generateTableAlloc() - large/overflowing column values" {
     try std.testing.expectEqualStrings(expected_table, table.generated_alloc_table.?.items);
 }
 
-test "Table with links" {
+test "Table with Cell options" {
     const allocator = std.testing.allocator;
 
     var column_widths = [_]usize{ 8, 4 };
@@ -341,18 +370,26 @@ test "Table with links" {
     defer table.deinit();
 
     var row1 = [_]Cell{ .{ .display_text = "Youtube" }, .{ .display_text = "Link", .link = "https://www.youtube.com" } };
-    var row2 = [_]Cell{ .{ .display_text = "GitHub" }, .{ .display_text = "Lin", .link = "https://github.com/yo-reign" } };
-    var row3 = [_]Cell{ .{ .display_text = "LinkedIn" }, .{ .display_text = "Links", .link = "https://www.linkedin.com/in/daniel-aguiar-reign", .open_in_new_tab = true } };
+    var row2 = [_]Cell{ .{ .display_text = "ysap" }, .{ .display_text = "Link", .link = "https://www.ysap.sh", .open_in_new_tab = true } };
+    var row3 = [_]Cell{ .{ .display_text = "GitHub" }, .{ .display_text = "Lin", .link = "https://github.com/yo-reign", .is_bold = true } };
+    var row4 = [_]Cell{ .{ .display_text = "LinkedIn" }, .{
+        .display_text = "Links",
+        .link = "https://www.linkedin.com/in/daniel-aguiar-reign",
+        .open_in_new_tab = true,
+        .is_bold = true,
+    } };
 
     try table.addRow(&row1);
     try table.addRow(&row2);
     try table.addRow(&row3);
+    try table.addRow(&row4);
 
     const expected_table =
         \\+ -------- + ---- +
         \\| Youtube  | <a href="https://www.youtube.com">Link</a> |
-        \\| GitHub   | <a href="https://github.com/yo-reign">Lin</a>  |
-        \\| LinkedIn | <a href="https://www.linkedin.com/in/daniel-aguiar-reign" target="_blank">Link</a> |
+        \\| ysap     | <a href="https://www.ysap.sh" target="_blank">Link</a> |
+        \\| GitHub   | <a href="https://github.com/yo-reign"><b>Lin</b></a>  |
+        \\| LinkedIn | <a href="https://www.linkedin.com/in/daniel-aguiar-reign" target="_blank"><b>Link</b></a> |
         \\+ -------- + ---- +
     ;
 

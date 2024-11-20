@@ -19,6 +19,10 @@ a:visited {
     text-decoration: none;
 }
 
+b {
+    font-weight: bold;
+}
+
 .center {
     text-align: center;
 }
