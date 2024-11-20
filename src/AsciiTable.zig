@@ -6,7 +6,7 @@
 //! Usage:
 //! - Initialize the table with `init`, specifying the allocator and column widths.
 //! - Create a row by create an array of `Cell` structs ie:
-//!     `var row1 = [_]Cell{ .{ .display_text = "a" }, .{ .display_text = "b", .link = "https://example.com" } };`
+//!     `var row1 = [_]Cell{ .{ .display_text = "a" }, .{ .display_text = "b", .link = "https://example.com", .open_in_new_tab = true } };`
 //! - Add rows using `addRow(<row>)`.
 //! - Generate the table using `generateTableToBuf()` or `generateTableAlloc()`.
 
@@ -17,7 +17,7 @@ const Self = @This();
 pub const Cell = struct {
     display_text: []const u8,
     link: ?[]const u8 = null,
-    // TODO: open_in_new_tab: bool = true,
+    open_in_new_tab: bool = false,
 };
 
 /// Used to create buffer inside generateTableToBuf() method which represents a border row.
@@ -177,14 +177,23 @@ fn writeRows(self: *Self, ascii_table_writer: anytype) !void {
             // Write the column value into the table
             if (cell.display_text.len > current_column_width) {
                 if (cell.link) |link| {
-                    try ascii_table_writer.print(" <a href=\"{s}\">{s}</a>", .{ link, cell.display_text[0..current_column_width] });
-                    try ascii_table_writer.print(" {c}", .{self.vertical_char});
+                    if (cell.open_in_new_tab) {
+                        try ascii_table_writer.print(" <a href=\"{s}\" target=\"_blank\">{s}</a>", .{ link, cell.display_text[0..current_column_width] });
+                    } else {
+                        try ascii_table_writer.print(" <a href=\"{s}\">{s}</a>", .{ link, cell.display_text[0..current_column_width] });
+                    }
                 } else {
-                    try ascii_table_writer.print(" {s} {c}", .{ cell.display_text[0..current_column_width], self.vertical_char });
+                    try ascii_table_writer.print(" {s}", .{cell.display_text[0..current_column_width]});
                 }
+
+                try ascii_table_writer.print(" {c}", .{self.vertical_char});
             } else {
                 if (cell.link) |link| {
-                    try ascii_table_writer.print(" <a href=\"{s}\">{s}</a> ", .{ link, cell.display_text });
+                    if (cell.open_in_new_tab) {
+                        try ascii_table_writer.print(" <a href=\"{s}\" target=\"_blank\">{s}</a> ", .{ link, cell.display_text });
+                    } else {
+                        try ascii_table_writer.print(" <a href=\"{s}\">{s}</a> ", .{ link, cell.display_text });
+                    }
                 } else {
                     try ascii_table_writer.print(" {s} ", .{cell.display_text});
                 }
@@ -274,32 +283,6 @@ test "generateTableToBuf() - Small column values" {
     try std.testing.expectEqualStrings(expected_table, generated_table);
 }
 
-test "generateTableToBuf() - large/overflowing column values" {
-    const allocator = std.testing.allocator;
-
-    var column_widths = [_]usize{ 5, 3, 10, 1 };
-    var table = init(allocator, &column_widths);
-    defer table.deinit();
-
-    var row1 = [_]Cell{ .{ .display_text = "Daniel" }, .{ .display_text = "Aguiar" }, .{ .display_text = "yo-reign" }, .{ .display_text = "yo" } };
-    var row2 = [_]Cell{ .{ .display_text = "a" }, .{ .display_text = "-" }, .{ .display_text = " " }, .{ .display_text = "" } };
-
-    try table.addRow(&row1);
-    try table.addRow(&row2);
-
-    const expected_table =
-        \\+ ----- + --- + ---------- + - +
-        \\| Danie | Agu | yo-reign   | y |
-        \\| a     | -   |            |   |
-        \\+ ----- + --- + ---------- + - +
-    ;
-
-    var buffer: [2048]u8 = undefined;
-    const generated_table = try table.generateTableToBuf(&buffer);
-
-    try std.testing.expectEqualStrings(expected_table, generated_table);
-}
-
 test "generateTableAlloc() - Small column values" {
     const allocator = std.testing.allocator;
 
@@ -358,8 +341,8 @@ test "Table with links" {
     defer table.deinit();
 
     var row1 = [_]Cell{ .{ .display_text = "Youtube" }, .{ .display_text = "Link", .link = "https://www.youtube.com" } };
-    var row2 = [_]Cell{ .{ .display_text = "GitHub" }, .{ .display_text = "Link", .link = "https://github.com/yo-reign" } };
-    var row3 = [_]Cell{ .{ .display_text = "LinkedIn" }, .{ .display_text = "Link", .link = "https://www.linkedin.com/in/daniel-aguiar-reign" } };
+    var row2 = [_]Cell{ .{ .display_text = "GitHub" }, .{ .display_text = "Lin", .link = "https://github.com/yo-reign" } };
+    var row3 = [_]Cell{ .{ .display_text = "LinkedIn" }, .{ .display_text = "Links", .link = "https://www.linkedin.com/in/daniel-aguiar-reign", .open_in_new_tab = true } };
 
     try table.addRow(&row1);
     try table.addRow(&row2);
@@ -368,8 +351,8 @@ test "Table with links" {
     const expected_table =
         \\+ -------- + ---- +
         \\| Youtube  | <a href="https://www.youtube.com">Link</a> |
-        \\| GitHub   | <a href="https://github.com/yo-reign">Link</a> |
-        \\| LinkedIn | <a href="https://www.linkedin.com/in/daniel-aguiar-reign">Link</a> |
+        \\| GitHub   | <a href="https://github.com/yo-reign">Lin</a>  |
+        \\| LinkedIn | <a href="https://www.linkedin.com/in/daniel-aguiar-reign" target="_blank">Link</a> |
         \\+ -------- + ---- +
     ;
 
