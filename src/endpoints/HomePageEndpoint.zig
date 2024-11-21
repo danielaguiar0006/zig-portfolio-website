@@ -9,13 +9,19 @@ pub const Self = @This();
 endpoint: zap.Endpoint = undefined,
 allocator: std.mem.Allocator = undefined,
 
+/// Holds all of the html content for this page (except for the html templates)
+var content: std.ArrayList(u8) = undefined;
 // TODO: HTML Template should probably be available to every/most endpoints, so make it somehow...
 var html_template_top_bun: []const u8 = undefined;
 var html_template_bottom_bun: []const u8 = undefined;
-var ascii_table: AsciiTable = undefined;
-var content: []const u8 = undefined;
+
+var menu_table: AsciiTable = undefined;
 
 pub fn init(allocator: std.mem.Allocator, path: []const u8) Self {
+    // INIT CONTENT
+    content = std.ArrayList(u8).init(allocator);
+    const content_writer = content.writer();
+
     // READ TEMPLATES
     const homepage_banner_template = std.fs.cwd().readFileAlloc(allocator, "src/templates/homepage_banner.html", std.math.maxInt(usize)) catch unreachable;
     defer allocator.free(homepage_banner_template);
@@ -30,28 +36,30 @@ pub fn init(allocator: std.mem.Allocator, path: []const u8) Self {
     html_template_top_bun = html_template_reader.readUntilDelimiterAlloc(allocator, '~', std.math.maxInt(usize)) catch unreachable;
     html_template_bottom_bun = html_template_reader.readAllAlloc(allocator, std.math.maxInt(usize)) catch unreachable;
 
-    // ASCII TABLE
-    var column_widths = [_]usize{ 10, 30 };
-    ascii_table = AsciiTable.init(allocator, &column_widths);
-    ascii_table.has_header_row = true;
+    // MENU - TODO: Make a global menu so modifying it in one place affects all other pages
+    var column_widths = [_]usize{15};
+    menu_table = AsciiTable.init(allocator, &column_widths);
 
-    var row1 = [_]Cell{ .{ .display_text = "WEBSITES", .is_bold = true }, .{ .display_text = "LINKS", .is_bold = true } };
-    var row2 = [_]Cell{ .{ .display_text = "YouTube" }, .{ .display_text = "TODO: Update this link", .link = "https://www.youtube.com", .open_in_new_tab = true } };
-    var row3 = [_]Cell{ .{ .display_text = "GitHub" }, .{ .display_text = "yo-reign", .link = "https://github.com/yo-reign", .open_in_new_tab = true, .is_bold = true } };
-    var row4 = [_]Cell{ .{ .display_text = "LinkedIn" }, .{ .display_text = "daniel-aguiar-reign", .link = "https://www.linkedin.com/in/daniel-aguiar-reign", .open_in_new_tab = true } };
+    // TODO: Add links to their respective pages
+    var row_1 = [_]Cell{.{ .display_text = "-> Home", .is_bold = true }};
+    var row_2 = [_]Cell{.{ .display_text = "Projects", .is_bold = true }};
+    var row_3 = [_]Cell{.{ .display_text = "Info", .is_bold = true }};
+    var row_4 = [_]Cell{.{ .display_text = "Contact", .is_bold = true }};
+    var row_5 = [_]Cell{.{ .display_text = "FAQ", .is_bold = true }};
+    var row_6 = [_]Cell{.{ .display_text = "Reign's Mind", .is_bold = true }};
 
-    ascii_table.addRow(&row1) catch unreachable;
-    ascii_table.addRow(&row2) catch unreachable;
-    ascii_table.addRow(&row3) catch unreachable;
-    ascii_table.addRow(&row4) catch unreachable;
+    menu_table.addRow(&row_1) catch unreachable;
+    menu_table.addRow(&row_2) catch unreachable;
+    menu_table.addRow(&row_3) catch unreachable;
+    menu_table.addRow(&row_4) catch unreachable;
+    menu_table.addRow(&row_5) catch unreachable;
+    menu_table.addRow(&row_6) catch unreachable;
 
-    ascii_table.generateTableAlloc() catch unreachable;
+    menu_table.generateTableAlloc() catch unreachable;
 
-    // WRITE CONTENT - NOTE: writing only once through allocPrint() simplifies the deinit() method
-    content = std.fmt.allocPrint(allocator, "{s}\n<pre>{s}</pre>", .{
-        homepage_banner_template,
-        ascii_table.generated_alloc_table.?.items,
-    }) catch unreachable;
+    // WRITE CONTENT
+    content_writer.print("{s}\n", .{homepage_banner_template}) catch unreachable; // Banner
+    content_writer.print("<div id=\"menu\"><b># MENU</b><pre>{s}</pre></div>", .{menu_table.generated_alloc_table.?.items}) catch unreachable; // Menu
 
     return .{
         .endpoint = zap.Endpoint.init(.{
@@ -65,8 +73,8 @@ pub fn init(allocator: std.mem.Allocator, path: []const u8) Self {
 pub fn deinit(self: *Self) void {
     self.allocator.free(html_template_top_bun);
     self.allocator.free(html_template_bottom_bun);
-    ascii_table.deinit();
-    self.allocator.free(content);
+    menu_table.deinit();
+    content.deinit();
 }
 
 pub fn getEndpoint(self: *Self) *zap.Endpoint {
@@ -76,9 +84,9 @@ pub fn getEndpoint(self: *Self) *zap.Endpoint {
 fn get(e: *zap.Endpoint, r: zap.Request) void {
     _ = e;
 
-    // HACK: Random buffer size, make sure to increase if needed
+    // Using a fixed buffer size to avoid heap
     var buffer: [4096]u8 = undefined;
-    const html = std.fmt.bufPrint(&buffer, "{s}{s}{s}", .{ html_template_top_bun, content, html_template_bottom_bun }) catch unreachable;
+    const html = std.fmt.bufPrint(&buffer, "{s}{s}{s}", .{ html_template_top_bun, content.items, html_template_bottom_bun }) catch unreachable;
 
     r.sendBody(html) catch return;
 }

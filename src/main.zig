@@ -6,7 +6,7 @@ const zap = @import("zap");
 
 const StyleEndpoint = @import("endpoints/StyleEndpoint.zig");
 const IconEndpoint = @import("endpoints/IconEndpoint.zig");
-const HomeEndpoint = @import("endpoints/HomeEndpoint.zig");
+const HomePageEndpoint = @import("endpoints/HomePageEndpoint.zig");
 
 const HOMEPAGE_URI = "/home";
 
@@ -65,7 +65,7 @@ pub fn main() !void {
     // INIT ENDPOINTS - NOTE: Watch out! Some might need to be deinited
     var style_endpoint = StyleEndpoint.init("/style.css");
     var icon_endpoint = IconEndpoint.init("/icon.jpg");
-    var home_endpoint = HomeEndpoint.init(allocator, HOMEPAGE_URI);
+    var home_endpoint = HomePageEndpoint.init(allocator, HOMEPAGE_URI);
     defer home_endpoint.deinit();
 
     // REGISTER ENDPOINTS TO LISTENER

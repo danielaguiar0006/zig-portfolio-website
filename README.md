@@ -1,3 +1,4 @@
+# zig-portfolio-website
 run with: `zig build run`
 runs on: localhost:9090
 
@@ -5,3 +6,11 @@ When changing things and want to be sure you are seeing the latest changes in yo
 To hard reload, press `Ctrl + F5` or `Shift + Reload Button` in chrome.
 
 [inspiration](https://ysap.sh/)
+
+---
+
+## Ideas
+
+- Make this whole project about showing off my skills and projects but also about creating somewhere to post my thoughts and ideas aswell as host my online projects
+    - Projects such as mini-games, websites, "experiences", experiments, etc...
+- Create a blog page with a list of post snippets

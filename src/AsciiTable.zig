@@ -10,7 +10,8 @@
 //! - Add rows using `addRow(<row>)`.
 //! - Generate the table using `generateTableToBuf()` or `generateTableAlloc()`.
 
-// TODO: Text color options
+// TODO: Hold off on the color support for now and think about how to implement different and customize-able global theme colors
+// TODO: Text color options (note also think about having a global theme which affects everything on the page... how does this fit in)
 // TODO: Add Row numbering support
 // TODO: Add border and number color options
 
@@ -26,6 +27,7 @@ pub const Cell = struct {
     // Options
     open_in_new_tab: bool = false,
     is_bold: bool = false,
+    // TODO: color_hex: u3 = 0xFFFFFF, // Default white // or Maybe have default color as a global theme primary color?
 };
 
 /// Used to create buffer inside generateTableToBuf() method which represents a border row.
@@ -45,6 +47,7 @@ generated_alloc_table: ?std.ArrayList(u8) = null,
 columns_widths: []usize = undefined,
 
 has_header_row: bool = false,
+is_single_column_header: bool = false,
 
 /// Outer list represents every row and column.
 /// Inner list each represent a row themselves and each index represents a column.
@@ -235,7 +238,7 @@ fn writeRows(self: *Self, ascii_table_writer: anytype, repeated_chars: []u8) !vo
             // Close vertical char
             try ascii_table_writer.print(" {c}", .{self.vertical_char});
 
-            // Add a header row separator
+            // Add a header row horizontal separator
             if (self.has_header_row and i == 0 and j == row.len - 1) {
                 try ascii_table_writer.print("\n{s}", .{repeated_chars});
             }
