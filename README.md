@@ -30,3 +30,6 @@ To hard reload, press `Ctrl + F5` or `Shift + Reload Button` in chrome.
     - Would Raylib targeted for the web be a good choice?
         - Benchmark/compare Raylib web target vs three.js
         - Considering the fact that I want to host Raylib minigames on this/a website eventually this might be a good chance to try it out on the web
+- Have a description of myself and what this project is: a fun and interesting way to showcase my skills and and future projects.
+    - The menu should be under this and as you scroll down everything else faids up the screen but the menu moves up untill it stay on the top left corner
+    - In this we scroll down and have a cool "experience" or game where the theme is about showing off my skills and projects.
