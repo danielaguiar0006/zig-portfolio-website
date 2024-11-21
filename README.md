@@ -23,7 +23,7 @@ To hard reload, press `Ctrl + F5` or `Shift + Reload Button` in chrome.
     - The blog page could just be an array of AsciiTables, each representing a post
     - Keep improving the AsciiTable library to make it more versatile and customizable
 - HTMX?
-- tailwindcss?
+- tailwindcss? unocss? plain css?
 - DDOS protection?
 - Cool generative/reactive background art like: [Keita Yamada Portfolio](https://p5aholic.me/)
     - Should i use three.js or another js library? or should I just use a canvas?
