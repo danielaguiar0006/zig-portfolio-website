@@ -21,8 +21,8 @@ pub fn getEndpoint(self: *Self) *zap.Endpoint {
 fn get(e: *zap.Endpoint, r: zap.Request) void {
     _ = e;
 
-    const file_path: []const u8 = "imgs/me_256x256.jpg";
-    r.sendFile(file_path) catch |err| { // FIXME: When sending both a styles.css and this image, it first fails once then retries and succeeds?!?
+    const file_path: []const u8 = "assets/images/me_256x256.jpg";
+    r.sendFile(file_path) catch |err| {
         std.debug.print("ERROR: {s}\n", .{@errorName(err)});
 
         r.setStatus(.internal_server_error);
