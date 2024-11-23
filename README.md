@@ -11,6 +11,8 @@ To hard reload, press `Ctrl + F5` or `Shift + Reload Button` in chrome.
 
 ## Ideas
 
+- Create an "ImageEndpoint" which is mapped to the `/img` URI and serves different images based on the full request path
+    - For example, if the request path is `/img/me_256x256.jpg` then it will serve the `assets/images/me_256x256.jpg` file
 - Global Dark, Light, and System modes
 - Different fonts
 - Custom Global theme colors
