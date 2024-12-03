@@ -53,10 +53,10 @@ pub fn main() !void {
 
     // CREATE LISTENER
     var endpoint_listener = zap.Endpoint.Listener.init(allocator, .{
-        .port = 9090,
+        .port = 8080,
         .on_request = on_request,
         .log = true,
-        //.public_folder = "html/",
+        // TODO: .public_folder = "html/",
         .max_clients = 10000,
         .max_body_size = 1024 * 1024 * 10,
     });
@@ -75,7 +75,7 @@ pub fn main() !void {
 
     // LISTEN
     try endpoint_listener.listen();
-    std.debug.print("Listening on 0.0.0.0:9090\n", .{});
+    std.debug.print("Listening on 0.0.0.0:8080\n", .{});
 
     // START ZAP
     zap.start(.{
