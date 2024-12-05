@@ -23,9 +23,9 @@
     // Once all dependencies are fetched, `zig build` no longer requires
     // internet connectivity.
     .dependencies = .{
-        .zap = .{
-            .url = "git+https://github.com/zigzap/zap?ref=v0.9.0#9543ede15fc9ad038ec4839628c886b124580983",
-            .hash = "1220bb12de9055d585ee0b19c8c9da41ad49a660f5da8be1372c7b85ba43f6e47372",
+        .jetzig = .{
+            .url = "https://github.com/jetzig-framework/jetzig/archive/31f8a4a93c38bae741ac38c8df7fef0a288bf8fe.tar.gz",
+            .hash = "122003d48675098813fc01379f67ae4ee14a1a4dfbeed3f3eb21b36506a51220e5fc",
         },
     },
     .paths = .{
