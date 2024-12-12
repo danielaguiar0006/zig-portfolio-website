@@ -1,37 +1,59 @@
-# zig-portfolio-website
-run with: `zig build run`
-runs on: localhost:9090
+# Tech Stack
 
-When changing things and want to be sure you are seeing the latest changes in your browser, make sure to **Hard Reload** the page.
-To hard reload, press `Ctrl + F5` or `Shift + Reload Button` in chrome.
+- **Zig** (Language)
+- **Jetzig** (Web Framework), Backup: Zap (Web Framework)
+    - Zmpl (Templating Language)
+    - JetQuery (Database Layer)
+        - PostgreSQL (Database; Compatible with JetQuery)
+- **HTMX** (Frontend Framework)
+- **Tailwind** (CSS Framework)
+- **Motion** (Animation Library)
+- **three.js** (WebGL Library)
 
-[inspiration](https://ysap.sh/)
+## Why this stack?
 
----
+`The goal is speed, efficiency, security, and most of all, simplicity. That is what I'm truly looking for.`
 
-## Ideas
+- **Zig** is a fast, safe, and relatively "simple" language alteast compared to other systems level languages.
+- **Jetzig** is currently the more fully featured web framework for Zig and offers a very alluring feature set offering:
+    - **http.zig** as part of their backend
+    - Templating with **Zmpl** (Their own templating language)
+    - Built-in middleware for **HTMX**
+    - Database layer through **JetQuery**
+    - And more...
+- **HTMX** is a fast, safe, and easy to learn frontend framework
+    - To allow for fast and easy interactions between the frontend and backend
+    - To avoid javascript and big/bloated javascript frameworks (like React, Vue, etc...)
+    - Has a large community with tons of examples/resources
+- **Tailwind** is a fast, safe, and easy to learn CSS framework
+    - Industry standard and has a large community with tons of examples/resources
+- **Motion** A modern animation library
+- **three.js** is a fast, safe, and easy to learn WebGL library for interesting and cool 3D effects
 
-- Create an "ImageEndpoint" which is mapped to the `/img` URI and serves different images based on the full request path
-    - For example, if the request path is `/img/me_256x256.jpg` then it will serve the `assets/images/me_256x256.jpg` file
-- Global Dark, Light, and System modes
-- Different fonts
-- Custom Global theme colors
-    - Make popular pre-made themes, but also allow users to create/import their own
-        - Think about the safety implications
-    - Make sure colors persist throughout the website for the user (maybe through cookies?)
-- Make this whole project about showing off my skills and projects but also about creating somewhere to post my thoughts and ideas aswell as host my online projects
-    - Projects such as mini-games, websites, "experiences", experiments, etc...
-- Create a blog page with a list of post snippets
-    - The blog page could just be an array of AsciiTables, each representing a post
-    - Keep improving the AsciiTable library to make it more versatile and customizable
-- HTMX?
-- tailwindcss? unocss? plain css?
-- DDOS protection?
-- Cool generative/reactive background art like: [Keita Yamada Portfolio](https://p5aholic.me/)
-    - Should i use three.js or another js library? or should I just use a canvas?
-    - Would Raylib targeted for the web be a good choice?
-        - Benchmark/compare Raylib web target vs three.js
-        - Considering the fact that I want to host Raylib minigames on this/a website eventually this might be a good chance to try it out on the web
-- Have a description of myself and what this project is: a fun and interesting way to showcase my skills and and future projects.
-    - The menu should be under this and as you scroll down everything else faids up the screen but the menu moves up untill it stay on the top left corner
-    - In this we scroll down and have a cool "experience" or game where the theme is about showing off my skills and projects.
+## Conventions
+
+### Commits
+
+Commit tag prefixes:
+  - `Feat` - New feature
+  - `Fix` - Bug fix
+  - `Refactor` - Refactoring
+  - `Perf` - Performance improvement
+  - `Doc` - Documentation
+  - `Test` - Test
+
+Example: `Feat: Add new endpoint for adding new tasks`
+
+```bash
+git commit -m "Feat: Add new endpoint for adding new tasks"
+```
+### Branches
+
+Branch names:
+  - `Dev` - Used for regular development
+  - `Main` - Used for production releases
+  - `Legacy` - Used for legacy versions of the website
+
+### Routes
+
+TODO: 
